@@ -28,9 +28,9 @@ describe("workspaces", () => {
 
     const body = await createWorkspace(app, accessToken, "Acme Corp");
 
-    expect(body.id).toBeTypeOf("string");
+    expect(body.id).toEqual(expect.any(String));
     expect(body.name).toBe("Acme Corp");
-    expect(body.slug).toBeTypeOf("string");
+    expect(body.slug).toEqual(expect.any(String));
     expect(body.slug).toMatch(/^acme-corp-[0-9a-f]{6}$/);
     expect(body.role).toBe("OWNER");
     expect(body.hasJiraApiToken).toBe(false);
@@ -38,7 +38,7 @@ describe("workspaces", () => {
     expect(body.jiraBaseUrl).toBeNull();
     expect(body.jiraEmail).toBeNull();
     expect(body.githubRepo).toBeNull();
-    expect(body.ollamaUrl).toBeTypeOf("string");
+    expect(body.ollamaUrl).toEqual(expect.any(String));
   });
 
   it("lists workspaces for the current user", async () => {
@@ -207,7 +207,7 @@ describe("workspaces", () => {
     expect(Array.isArray(body)).toBe(true);
     expect(body).toHaveLength(1);
     expect(body[0].role).toBe("OWNER");
-    expect(body[0].email).toBeTypeOf("string");
+    expect(body[0].email).toEqual(expect.any(String));
   });
 
   it("allows the owner to add an existing user as a member, and the member can then view the workspace", async () => {

@@ -35,7 +35,7 @@ describe("webhook sources", () => {
     expect(response.statusCode).toBe(201);
     const body = response.json();
     expect(body.name).toBe("Sentry");
-    expect(body.apiKey).toBeTypeOf("string");
+    expect(body.apiKey).toEqual(expect.any(String));
     expect(body.apiKey.length).toBeGreaterThan(0);
     expect(body.payloadCount).toBe(0);
     expect(body.lastReceivedAt).toBeNull();

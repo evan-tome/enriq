@@ -31,7 +31,7 @@ describe("auth flow", () => {
     expect(response.statusCode).toBe(201);
     const body = response.json();
     expect(body.email).toBe(credentials.email);
-    expect(body.id).toBeTypeOf("string");
+    expect(body.id).toEqual(expect.any(String));
   });
 
   it("rejects duplicate registration", async () => {
@@ -49,7 +49,7 @@ describe("auth flow", () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({ token_type: "bearer" });
-    expect(response.json().access_token).toBeTypeOf("string");
+    expect(response.json().access_token).toEqual(expect.any(String));
     expect(response.cookies.some((cookie) => cookie.name === env.REFRESH_COOKIE_NAME)).toBe(true);
   });
 
@@ -90,7 +90,7 @@ describe("auth flow", () => {
     });
 
     expect(response.statusCode).toBe(200);
-    expect(response.json().access_token).toBeTypeOf("string");
+    expect(response.json().access_token).toEqual(expect.any(String));
 
     const reuse = await app.inject({
       method: "POST",

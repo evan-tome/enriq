@@ -45,7 +45,7 @@ describe("triage items", () => {
     });
 
     expect(ingestResponse.statusCode).toBe(201);
-    expect(ingestResponse.json().id).toBeTypeOf("string");
+    expect(ingestResponse.json().id).toEqual(expect.any(String));
 
     const invalidResponse = await app.inject({
       method: "POST",
