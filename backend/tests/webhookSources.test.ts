@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it } from "@jest/globals";
 
 import { type App, buildApp } from "../src/app";
 import { prisma } from "../src/lib/prisma";

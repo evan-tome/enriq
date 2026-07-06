@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, jest } from "@jest/globals";
 
 import { encryptValue } from "../../src/lib/encryption";
 import { extractQuotedPhrases, getRecentCommitters, searchRepoForPhrases } from "../../src/services/githubService";
@@ -9,7 +9,7 @@ function workspaceWith(githubRepo: string | null, githubTokenEncrypted: string |
 
 describe("getRecentCommitters", () => {
   afterEach(() => {
-    vi.unstubAllGlobals();
+    jest.restoreAllMocks();
   });
 
   it("returns an empty array when no repo is configured", async () => {
@@ -21,7 +21,7 @@ describe("getRecentCommitters", () => {
   });
 
   it("ranks committers by how often they appear across the given files' commit history", async () => {
-    const fetchMock = vi.fn(async (url: string | URL) => {
+    jest.spyOn(global, "fetch").mockImplementation(async (url) => {
       const urlStr = url.toString();
 
       if (urlStr.includes("path=src%2Findex.ts")) {
@@ -38,19 +38,15 @@ describe("getRecentCommitters", () => {
       return new Response("not found", { status: 404 });
     });
 
-    vi.stubGlobal("fetch", fetchMock);
-
     const committers = await getRecentCommitters(workspaceWith("acme/repo"), ["src/index.ts", "src/utils.ts"]);
 
     expect(committers).toEqual(["alice", "bob"]);
   });
 
   it("ignores commits with no linked GitHub account", async () => {
-    const fetchMock = vi.fn(async () =>
+    jest.spyOn(global, "fetch").mockImplementation(async () =>
       new Response(JSON.stringify([{ author: null }, { author: { login: "carol" } }]), { status: 200 }),
     );
-
-    vi.stubGlobal("fetch", fetchMock);
 
     const committers = await getRecentCommitters(workspaceWith("acme/repo"), ["src/index.ts"]);
 
@@ -88,7 +84,7 @@ describe("extractQuotedPhrases", () => {
 
 describe("searchRepoForPhrases", () => {
   afterEach(() => {
-    vi.unstubAllGlobals();
+    jest.restoreAllMocks();
   });
 
   it("returns an empty array when no repo is configured", async () => {
@@ -106,7 +102,7 @@ describe("searchRepoForPhrases", () => {
   });
 
   it("aggregates matched file paths from each phrase's search results", async () => {
-    const fetchMock = vi.fn(async (url: string | URL) => {
+    jest.spyOn(global, "fetch").mockImplementation(async (url) => {
       const urlStr = url.toString();
 
       if (urlStr.includes(encodeURIComponent('"Least Active Classes"'))) {
@@ -131,8 +127,6 @@ describe("searchRepoForPhrases", () => {
       return new Response("not found", { status: 404 });
     });
 
-    vi.stubGlobal("fetch", fetchMock);
-
     const paths = await searchRepoForPhrases(workspaceWith("acme/repo", encryptValue("token")), [
       "Least Active Classes",
       "Performing Classes",
@@ -142,9 +136,7 @@ describe("searchRepoForPhrases", () => {
   });
 
   it("ignores phrases whose search request fails", async () => {
-    const fetchMock = vi.fn(async () => new Response("rate limited", { status: 403 }));
-
-    vi.stubGlobal("fetch", fetchMock);
+    jest.spyOn(global, "fetch").mockImplementation(async () => new Response("rate limited", { status: 403 }));
 
     const paths = await searchRepoForPhrases(workspaceWith("acme/repo", encryptValue("token")), ["Some phrase"]);
 
@@ -152,7 +144,7 @@ describe("searchRepoForPhrases", () => {
   });
 
   it("caps the result at 5 file paths", async () => {
-    const fetchMock = vi.fn(async () =>
+    jest.spyOn(global, "fetch").mockImplementation(async () =>
       new Response(
         JSON.stringify({
           items: [
@@ -167,8 +159,6 @@ describe("searchRepoForPhrases", () => {
         { status: 200 },
       ),
     );
-
-    vi.stubGlobal("fetch", fetchMock);
 
     const paths = await searchRepoForPhrases(workspaceWith("acme/repo", encryptValue("token")), ["phrase"]);
 

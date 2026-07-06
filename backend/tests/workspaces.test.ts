@@ -1,6 +1,6 @@
 // Requires a running Postgres instance (docker compose up -d postgres) with
 // DATABASE_URL pointing to it and the init migration applied.
-import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it } from "@jest/globals";
 
 import { type App, buildApp } from "../src/app";
 import { prisma } from "../src/lib/prisma";

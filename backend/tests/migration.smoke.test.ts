@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 
 import { PGlite } from "@electric-sql/pglite";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@jest/globals";
 
 const MIGRATION_PATH = path.join(__dirname, "../prisma/migrations/20260613000000_init/migration.sql");
 
