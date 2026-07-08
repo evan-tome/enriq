@@ -1,8 +1,3 @@
-import { LogOut } from "lucide-react"
-
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/lib/auth-context"
 
 export function ProfilePage() {
@@ -16,35 +11,37 @@ export function ProfilePage() {
         <p className="text-sm text-muted-foreground">Your account information.</p>
       </div>
 
-      <Card className="max-w-xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3">
-            <span className="flex size-10 items-center justify-center rounded-full bg-muted text-base font-medium">
-              {initial}
-            </span>
-            <span>{user?.email}</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          <Separator />
-          <div className="flex items-center justify-between text-sm">
+      <div className="max-w-xl rounded-lg border border-border bg-card p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <span className="flex size-10 items-center justify-center rounded-full bg-muted text-base font-medium">
+            {initial}
+          </span>
+          <span className="font-medium">{user?.email}</span>
+        </div>
+
+        <hr className="border-border mb-4" />
+
+        <div className="flex flex-col gap-3 text-sm mb-6">
+          <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Email</span>
             <span className="font-medium">{user?.email}</span>
           </div>
-          <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Member since</span>
             <span className="font-medium">
               {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : "—"}
             </span>
           </div>
-        </CardContent>
-        <CardFooter>
-          <Button variant="destructive" onClick={() => void logout()}>
-            <LogOut />
-            Log out
-          </Button>
-        </CardFooter>
-      </Card>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => void logout()}
+          className="px-3 py-1.5 text-sm font-medium rounded-md bg-destructive text-white hover:opacity-90"
+        >
+          Log out
+        </button>
+      </div>
     </div>
   )
 }

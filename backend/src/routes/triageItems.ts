@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { App } from "../app";
 import { requireWorkspaceMember } from "../lib/workspaceAuth";
 import { TRIAGE_STATUSES, triageItemSchema, updateTriageItemBodySchema } from "../schemas/triageItem.schema";
+import { triggerEnrichment } from "../services/enrichmentService";
 import { getTriageItem, listTriageItems, updateTriageItem } from "../services/triageItemService";
 
 const workspaceParamsSchema = z.object({ workspaceId: z.string() });
@@ -56,7 +57,13 @@ export async function triageItemRoutes(app: App) {
       const { workspaceId, id } = request.params;
       await requireWorkspaceMember(workspaceId, request.user!.id);
 
-      return updateTriageItem(workspaceId, id, request.body);
+      const item = await updateTriageItem(workspaceId, id, request.body);
+
+      if (request.body.status === "APPROVED") {
+        void triggerEnrichment(workspaceId, id);
+      }
+
+      return item;
     },
   );
 }

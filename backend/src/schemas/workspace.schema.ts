@@ -58,22 +58,6 @@ export const jiraPrioritySchema = z.object({
   name: z.string(),
 });
 
-export const enrichmentStatusSchema = z.object({
-  worker: z.object({
-    started: z.boolean(),
-    processing: z.boolean(),
-    lastTickAt: z.string().nullable(),
-    lastResult: z.enum(["EMPTY", "PROCESSED", "FAILED"]).nullable(),
-    lastError: z.string().nullable(),
-    lastErrorAt: z.string().nullable(),
-  }),
-  queue: z.object({
-    approved: z.number(),
-    enriching: z.number(),
-    enriched: z.number(),
-  }),
-});
-
 export const workspaceMemberSchema = z.object({
   id: z.string(),
   userId: z.string(),
@@ -95,4 +79,3 @@ export type OllamaStatusDto = z.infer<typeof ollamaStatusSchema>;
 export type JiraStatusDto = z.infer<typeof jiraStatusSchema>;
 export type GithubStatusDto = z.infer<typeof githubStatusSchema>;
 export type JiraPriorityDto = z.infer<typeof jiraPrioritySchema>;
-export type EnrichmentStatusDto = z.infer<typeof enrichmentStatusSchema>;

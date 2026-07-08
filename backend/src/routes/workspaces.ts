@@ -6,7 +6,6 @@ import { requireWorkspaceMember } from "../lib/workspaceAuth";
 import {
   addWorkspaceMemberBodySchema,
   createWorkspaceBodySchema,
-  enrichmentStatusSchema,
   githubStatusSchema,
   jiraPrioritySchema,
   jiraStatusSchema,
@@ -15,8 +14,7 @@ import {
   workspaceMemberSchema,
   workspaceSchema,
 } from "../schemas/workspace.schema";
-import { getEnrichmentWorkerStatus } from "../jobs/enrichmentWorker";
-import { checkOllamaStatus, getEnrichmentQueueCounts } from "../services/enrichmentService";
+import { checkOllamaStatus } from "../services/enrichmentService";
 import { checkGithubStatus } from "../services/githubService";
 import { checkJiraStatus, getJiraPriorities } from "../services/jiraService";
 import {
@@ -178,23 +176,6 @@ export async function workspaceRoutes(app: App) {
       }
 
       return getJiraPriorities(workspace);
-    },
-  );
-
-  app.get(
-    "/workspaces/:workspaceId/enrichment-status",
-    {
-      preHandler: [app.authenticate],
-      schema: { params: workspaceParamsSchema, response: { 200: enrichmentStatusSchema } },
-    },
-    async (request) => {
-      const { workspaceId } = request.params;
-      await requireWorkspaceMember(workspaceId, request.user!.id);
-
-      return {
-        worker: getEnrichmentWorkerStatus(),
-        queue: await getEnrichmentQueueCounts(workspaceId),
-      };
     },
   );
 

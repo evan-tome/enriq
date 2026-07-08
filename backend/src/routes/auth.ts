@@ -24,10 +24,7 @@ const REFRESH_COOKIE_OPTIONS: CookieSerializeOptions = {
 export async function authRoutes(app: App) {
   app.post(
     "/register",
-    {
-      schema: { body: registerBodySchema, response: { 201: userPublicSchema } },
-      config: { rateLimit: { max: env.RATE_LIMIT_REGISTER_MAX, timeWindow: "1 minute" } },
-    },
+    { schema: { body: registerBodySchema, response: { 201: userPublicSchema } } },
     async (request, reply) => {
       const user = await registerUser(request.body.email, request.body.password);
       return reply.status(201).send(user);
@@ -36,10 +33,7 @@ export async function authRoutes(app: App) {
 
   app.post(
     "/login",
-    {
-      schema: { body: loginBodySchema, response: { 200: tokenResponseSchema } },
-      config: { rateLimit: { max: env.RATE_LIMIT_LOGIN_MAX, timeWindow: "1 minute" } },
-    },
+    { schema: { body: loginBodySchema, response: { 200: tokenResponseSchema } } },
     async (request, reply) => {
       const user = await authenticateUser(request.body.email, request.body.password);
       const tokens = await createTokenPair(user.id);

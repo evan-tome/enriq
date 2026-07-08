@@ -4,7 +4,6 @@ import type { App } from "../app";
 import { requireWorkspaceMember } from "../lib/workspaceAuth";
 import {
   createWebhookSourceBodySchema,
-  updateWebhookSourceBodySchema,
   webhookSourceCreatedSchema,
   webhookSourceSchema,
 } from "../schemas/webhookSource.schema";
@@ -13,8 +12,6 @@ import {
   createWebhookSource,
   deleteWebhookSource,
   listWebhookSources,
-  sendTestCallback,
-  updateWebhookSource,
 } from "../services/webhookSourceService";
 
 const workspaceParamsSchema = z.object({ workspaceId: z.string() });
@@ -55,57 +52,16 @@ export async function webhookSourceRoutes(app: App) {
     },
   );
 
-  app.patch(
-    "/workspaces/:workspaceId/webhook-sources/:id",
-    {
-      preHandler: [app.authenticate],
-      schema: {
-        params: webhookSourceParamsSchema,
-        body: updateWebhookSourceBodySchema,
-        response: { 200: webhookSourceSchema },
-      },
-    },
-    async (request) => {
-      const { workspaceId, id } = request.params;
-      await requireWorkspaceMember(workspaceId, request.user!.id);
-
-      return updateWebhookSource(workspaceId, id, request.body);
-    },
-  );
-
-  app.post(
-    "/workspaces/:workspaceId/webhook-sources/:id/test-callback",
-    {
-      preHandler: [app.authenticate],
-      schema: {
-        params: webhookSourceParamsSchema,
-        response: { 200: z.object({ ok: z.boolean() }) },
-      },
-    },
-    async (request) => {
-      const { workspaceId, id } = request.params;
-      await requireWorkspaceMember(workspaceId, request.user!.id);
-
-      return sendTestCallback(workspaceId, id);
-    },
-  );
-
   app.post(
     "/workspaces/:workspaceId/webhook-sources/:id/test-event",
     {
       preHandler: [app.authenticate],
-      schema: {
-        params: webhookSourceParamsSchema,
-        response: { 201: z.object({ id: z.string() }) },
-      },
+      schema: { params: webhookSourceParamsSchema, response: { 200: z.object({ id: z.string() }) } },
     },
-    async (request, reply) => {
+    async (request) => {
       const { workspaceId, id } = request.params;
       await requireWorkspaceMember(workspaceId, request.user!.id);
-
-      const result = await createTestEvent(workspaceId, id);
-
-      return reply.status(201).send(result);
+      return createTestEvent(workspaceId, id);
     },
   );
 

@@ -38,26 +38,6 @@ export async function getJiraPriorities(workspace: Workspace): Promise<JiraPrior
   return priorities.map(({ id, name }) => ({ id, name }));
 }
 
-/** Fetches the summaries of the most recently created issues in the workspace's Jira project, for use as title style examples. */
-export async function getRecentIssueTitles(workspace: Workspace, limit = 15): Promise<string[]> {
-  const url = new URL("/rest/api/3/search", workspace.jiraBaseUrl!);
-  url.searchParams.set("jql", `project = ${workspace.jiraProjectKey} ORDER BY created DESC`);
-  url.searchParams.set("maxResults", String(limit));
-  url.searchParams.set("fields", "summary");
-
-  const response = await fetch(url, {
-    headers: buildAuthHeaders(workspace),
-    signal: AbortSignal.timeout(5000),
-  });
-
-  if (!response.ok) {
-    return [];
-  }
-
-  const body = (await response.json()) as { issues: { fields: { summary: string } }[] };
-  return body.issues.map((issue) => issue.fields.summary);
-}
-
 /** Builds an Atlassian Document Format document from the issue description, with an optional reporter line. */
 function toDescriptionDoc(description: string, reporter: string | null) {
   const content = [

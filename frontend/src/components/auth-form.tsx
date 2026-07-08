@@ -1,9 +1,5 @@
 import { useState, type FormEvent, type ReactNode } from "react"
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { getErrorMessage } from "@/lib/api"
 
 interface AuthFormProps {
@@ -24,7 +20,6 @@ export function AuthForm({ title, description, submitLabel, onSubmit, footer }: 
     event.preventDefault()
     setError(null)
     setSubmitting(true)
-
     try {
       await onSubmit(email, password)
     } catch (err) {
@@ -42,45 +37,51 @@ export function AuthForm({ title, description, submitLabel, onSubmit, footer }: 
         <span className="text-lg">Enriq</span>
       </div>
 
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle className="text-xl">{title}</CardTitle>
-          <CardDescription>{description}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                minLength={8}
-                maxLength={72}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-              />
-            </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button type="submit" disabled={submitting} className="w-full">
-              {submitting ? "Please wait..." : submitLabel}
-            </Button>
-          </form>
-        </CardContent>
-        <CardFooter className="justify-center bg-transparent">{footer}</CardFooter>
-      </Card>
+      <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6 shadow-sm">
+        <div className="mb-4">
+          <h1 className="text-xl font-semibold">{title}</h1>
+          <p className="text-sm text-muted-foreground">{description}</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="email" className="text-sm font-medium">Email</label>
+            <input
+              id="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-3 py-1.5 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="password" className="text-sm font-medium">Password</label>
+            <input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              minLength={8}
+              maxLength={72}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-3 py-1.5 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full px-3 py-1.5 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          >
+            {submitting ? "Please wait..." : submitLabel}
+          </button>
+        </form>
+
+        <div className="mt-4 text-center">{footer}</div>
+      </div>
     </div>
   )
 }

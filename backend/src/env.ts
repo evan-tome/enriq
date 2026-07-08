@@ -26,9 +26,6 @@ const envSchema = z.object({
 
   OLLAMA_BASE_URL: z.string().default("http://localhost:11434"),
   OLLAMA_MODEL: z.string().default("codellama"),
-
-  RATE_LIMIT_LOGIN_MAX: z.coerce.number().int().positive().default(5),
-  RATE_LIMIT_REGISTER_MAX: z.coerce.number().int().positive().default(3),
 });
 
 export const env = envSchema.parse(process.env);

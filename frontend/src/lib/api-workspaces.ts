@@ -50,22 +50,6 @@ export interface JiraPriority {
   name: string
 }
 
-export interface EnrichmentStatus {
-  worker: {
-    started: boolean
-    processing: boolean
-    lastTickAt: string | null
-    lastResult: "EMPTY" | "PROCESSED" | "FAILED" | null
-    lastError: string | null
-    lastErrorAt: string | null
-  }
-  queue: {
-    approved: number
-    enriching: number
-    enriched: number
-  }
-}
-
 export interface UpdateWorkspaceInput {
   name?: string
   jiraBaseUrl?: string | null
@@ -150,12 +134,6 @@ export function getGithubStatus(accessToken: string, workspaceId: string) {
 
 export function getJiraPriorities(accessToken: string, workspaceId: string) {
   return request<JiraPriority[]>(`/workspaces/${workspaceId}/jira-priorities`, {
-    headers: authHeaders(accessToken),
-  })
-}
-
-export function getEnrichmentStatus(accessToken: string, workspaceId: string) {
-  return request<EnrichmentStatus>(`/workspaces/${workspaceId}/enrichment-status`, {
     headers: authHeaders(accessToken),
   })
 }

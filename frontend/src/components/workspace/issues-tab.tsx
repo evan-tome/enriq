@@ -1,24 +1,5 @@
-import { Bug } from "lucide-react"
 import { useEffect, useState, type FormEvent } from "react"
 
-import { InfoTooltip } from "@/components/info-tooltip"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Textarea } from "@/components/ui/textarea"
 import { getErrorMessage } from "@/lib/api"
 import {
   createIssue,
@@ -45,17 +26,6 @@ interface IssuesTabProps {
 
 const NONE = "__none__"
 
-const COMPLEXITY_VARIANTS: Record<IssueComplexity, "outline" | "secondary" | "destructive"> = {
-  LOW: "outline",
-  MEDIUM: "secondary",
-  HIGH: "destructive",
-}
-
-const STATUS_VARIANTS: Record<IssueStatus, "secondary" | "default"> = {
-  DRAFT: "secondary",
-  PUSHED: "default",
-}
-
 export function IssuesTab({ workspaceId, jiraConfigured, jiraBaseUrl }: IssuesTabProps) {
   const { accessToken } = useAuth()
   const [issues, setIssues] = useState<Issue[]>([])
@@ -63,11 +33,12 @@ export function IssuesTab({ workspaceId, jiraConfigured, jiraBaseUrl }: IssuesTa
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [pushingId, setPushingId] = useState<string | null>(null)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   const [createOpen, setCreateOpen] = useState(false)
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
-  const [triageItemId, setTriageItemId] = useState<string>(NONE)
+  const [triageItemId, setTriageItemId] = useState(NONE)
   const [approvedTriageItems, setApprovedTriageItems] = useState<TriageItem[]>([])
   const [createError, setCreateError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
@@ -76,14 +47,13 @@ export function IssuesTab({ workspaceId, jiraConfigured, jiraBaseUrl }: IssuesTa
   const [editTitle, setEditTitle] = useState("")
   const [editDescription, setEditDescription] = useState("")
   const [editAffectedFiles, setEditAffectedFiles] = useState("")
-  const [editPriority, setEditPriority] = useState<string>(NONE)
+  const [editPriority, setEditPriority] = useState(NONE)
   const [editComplexity, setEditComplexity] = useState<IssueComplexity | typeof NONE>(NONE)
   const [editReporter, setEditReporter] = useState("")
   const [editSuggestedAssignee, setEditSuggestedAssignee] = useState("")
   const [editReasoning, setEditReasoning] = useState("")
   const [editError, setEditError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
-  const [refreshKey, setRefreshKey] = useState(0)
 
   const [deleteTarget, setDeleteTarget] = useState<Issue | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -91,66 +61,31 @@ export function IssuesTab({ workspaceId, jiraConfigured, jiraBaseUrl }: IssuesTa
   const [jiraPriorities, setJiraPriorities] = useState<JiraPriority[]>([])
 
   useEffect(() => {
-    if (!accessToken || !jiraConfigured) {
-      return
-    }
-
+    if (!accessToken || !jiraConfigured) return
     let cancelled = false
-
     getJiraPriorities(accessToken, workspaceId)
-      .then((priorities) => {
-        if (!cancelled) {
-          setJiraPriorities(priorities)
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setJiraPriorities([])
-        }
-      })
-
-    return () => {
-      cancelled = true
-    }
+      .then((p) => { if (!cancelled) setJiraPriorities(p) })
+      .catch(() => { if (!cancelled) setJiraPriorities([]) })
+    return () => { cancelled = true }
   }, [accessToken, workspaceId, jiraConfigured])
 
   useEffect(() => {
-    if (!accessToken) {
-      return
-    }
-
+    if (!accessToken) return
     let cancelled = false
-
     listIssues(accessToken, workspaceId, statusFilter === "ALL" ? undefined : statusFilter)
-      .then((data) => {
-        if (!cancelled) {
-          setIssues(data)
-          setError(null)
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setError(getErrorMessage(err))
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setLoading(false)
-        }
-      })
-
-    return () => {
-      cancelled = true
-    }
+      .then((data) => { if (!cancelled) { setIssues(data); setError(null) } })
+      .catch((err) => { if (!cancelled) setError(getErrorMessage(err)) })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
   }, [accessToken, workspaceId, statusFilter, refreshKey])
 
-  function handleCreateOpenChange(open: boolean) {
-    setCreateOpen(open)
-    if (open && accessToken) {
-      setTitle("")
-      setDescription("")
-      setTriageItemId(NONE)
-      setCreateError(null)
+  function openCreateDialog() {
+    setTitle("")
+    setDescription("")
+    setTriageItemId(NONE)
+    setCreateError(null)
+    setCreateOpen(true)
+    if (accessToken) {
       listTriageItems(accessToken, workspaceId, "APPROVED")
         .then(setApprovedTriageItems)
         .catch(() => setApprovedTriageItems([]))
@@ -159,13 +94,9 @@ export function IssuesTab({ workspaceId, jiraConfigured, jiraBaseUrl }: IssuesTa
 
   async function handleCreate(event: FormEvent) {
     event.preventDefault()
-    if (!accessToken) {
-      return
-    }
-
+    if (!accessToken) return
     setCreateError(null)
     setCreating(true)
-
     try {
       await createIssue(accessToken, workspaceId, {
         title,
@@ -173,7 +104,7 @@ export function IssuesTab({ workspaceId, jiraConfigured, jiraBaseUrl }: IssuesTa
         triageItemId: triageItemId === NONE ? undefined : triageItemId,
       })
       setCreateOpen(false)
-      setRefreshKey((key) => key + 1)
+      setRefreshKey((k) => k + 1)
     } catch (err) {
       setCreateError(getErrorMessage(err))
     } finally {
@@ -196,21 +127,14 @@ export function IssuesTab({ workspaceId, jiraConfigured, jiraBaseUrl }: IssuesTa
 
   async function handleEditSubmit(event: FormEvent) {
     event.preventDefault()
-    if (!accessToken || !editingIssue) {
-      return
-    }
-
+    if (!accessToken || !editingIssue) return
     setEditError(null)
     setSaving(true)
-
     try {
       const data: UpdateIssueInput = {
         title: editTitle,
         description: editDescription,
-        affectedFiles: editAffectedFiles
-          .split("\n")
-          .map((file) => file.trim())
-          .filter((file) => file !== ""),
+        affectedFiles: editAffectedFiles.split("\n").map((f) => f.trim()).filter((f) => f !== ""),
         priority: editPriority === NONE ? null : editPriority,
         complexity: editComplexity === NONE ? null : editComplexity,
         reporter: editReporter.trim() === "" ? null : editReporter,
@@ -219,7 +143,7 @@ export function IssuesTab({ workspaceId, jiraConfigured, jiraBaseUrl }: IssuesTa
       }
       await updateIssue(accessToken, workspaceId, editingIssue.id, data)
       setEditingIssue(null)
-      setRefreshKey((key) => key + 1)
+      setRefreshKey((k) => k + 1)
     } catch (err) {
       setEditError(getErrorMessage(err))
     } finally {
@@ -228,16 +152,12 @@ export function IssuesTab({ workspaceId, jiraConfigured, jiraBaseUrl }: IssuesTa
   }
 
   async function handleDelete(id: string) {
-    if (!accessToken) {
-      return
-    }
-
+    if (!accessToken) return
     setDeleting(true)
-
     try {
       await deleteIssue(accessToken, workspaceId, id)
       setDeleteTarget(null)
-      setRefreshKey((key) => key + 1)
+      setRefreshKey((k) => k + 1)
     } catch (err) {
       setError(getErrorMessage(err))
     } finally {
@@ -246,16 +166,12 @@ export function IssuesTab({ workspaceId, jiraConfigured, jiraBaseUrl }: IssuesTa
   }
 
   async function handlePushToJira(id: string) {
-    if (!accessToken) {
-      return
-    }
-
+    if (!accessToken) return
     setError(null)
     setPushingId(id)
-
     try {
       await pushIssueToJira(accessToken, workspaceId, id)
-      setRefreshKey((key) => key + 1)
+      setRefreshKey((k) => k + 1)
     } catch (err) {
       setError(getErrorMessage(err))
     } finally {
@@ -265,85 +181,25 @@ export function IssuesTab({ workspaceId, jiraConfigured, jiraBaseUrl }: IssuesTa
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold">Issues</h2>
           <p className="text-sm text-muted-foreground">
-            Units of work for this workspace, created manually and optionally linked to an approved inbox
-            item. Draft issues stay in Enriq; pushed issues have been synced to Jira.
+            Draft issues stay in Enriq; pushed issues have been synced to Jira.
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as IssueStatus | "ALL")}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All</SelectItem>
-              {ISSUE_STATUSES.map((status) => (
-                <SelectItem key={status} value={status}>
-                  {status}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Dialog open={createOpen} onOpenChange={handleCreateOpenChange}>
-            <DialogTrigger render={<Button>New issue</Button>} />
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>New issue</DialogTitle>
-                <DialogDescription>
-                  Describe the work to be done. You can refine priority, complexity, and other details after
-                  creating it.
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleCreate} className="flex flex-col gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="issue-title">Title</Label>
-                  <Input
-                    id="issue-title"
-                    required
-                    value={title}
-                    onChange={(event) => setTitle(event.target.value)}
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="issue-description">Description</Label>
-                  <Textarea
-                    id="issue-description"
-                    required
-                    value={description}
-                    onChange={(event) => setDescription(event.target.value)}
-                  />
-                </div>
-                {approvedTriageItems.length > 0 && (
-                  <div className="flex flex-col gap-1.5">
-                    <Label>Linked inbox item (optional)</Label>
-                    <Select value={triageItemId} onValueChange={(value) => setTriageItemId(value ?? NONE)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={NONE}>None</SelectItem>
-                        {approvedTriageItems.map((item) => (
-                          <SelectItem key={item.id} value={item.id}>
-                            {item.title ?? item.id}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-                {createError && <p className="text-sm text-destructive">{createError}</p>}
-                <DialogFooter>
-                  <Button type="submit" disabled={creating}>
-                    {creating ? "Creating..." : "Create"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as IssueStatus | "ALL")}
+            className="px-3 py-1.5 text-sm border border-input rounded-md bg-background focus:outline-none"
+          >
+            <option value="ALL">All</option>
+            {ISSUE_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <button type="button" onClick={openCreateDialog} className="px-3 py-1.5 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:opacity-90">
+            New issue
+          </button>
         </div>
       </div>
 
@@ -352,289 +208,182 @@ export function IssuesTab({ workspaceId, jiraConfigured, jiraBaseUrl }: IssuesTa
 
       {!loading && !error && issues.length === 0 && (
         <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed py-16 text-center">
-          <div className="flex size-12 items-center justify-center rounded-full bg-muted">
-            <Bug className="size-6 text-muted-foreground" />
-          </div>
-          <div>
-            <p className="font-medium">No issues yet</p>
-            <p className="text-sm text-muted-foreground">
-              Create one manually, optionally linking it to an inbox item you&apos;ve approved.
-            </p>
-          </div>
+          <p className="font-medium">No issues yet</p>
+          <p className="text-sm text-muted-foreground">Create one manually, optionally linking it to an approved inbox item.</p>
         </div>
       )}
 
       {!loading && !error && issues.length > 0 && (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Reporter</TableHead>
-              <TableHead>Priority</TableHead>
-              <TableHead>
-                <span className="inline-flex items-center gap-1">
-                  Complexity
-                  <InfoTooltip>An estimate of how much effort this issue will take to resolve.</InfoTooltip>
-                </span>
-              </TableHead>
-              <TableHead>
-                <span className="inline-flex items-center gap-1">
-                  Status
-                  <InfoTooltip>Draft issues are local to Enriq. Pushed issues have been synced to Jira.</InfoTooltip>
-                </span>
-              </TableHead>
-              <TableHead>Jira key</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {issues.map((issue) => (
-              <TableRow key={issue.id}>
-                <TableCell className="max-w-md truncate">{issue.title}</TableCell>
-                <TableCell className="text-muted-foreground">{issue.reporter ?? ""}</TableCell>
-                <TableCell>{issue.priority && <Badge variant="outline">{issue.priority}</Badge>}</TableCell>
-                <TableCell>
-                  {issue.complexity && (
-                    <Badge variant={COMPLEXITY_VARIANTS[issue.complexity]}>{issue.complexity}</Badge>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Badge variant={STATUS_VARIANTS[issue.status]}>{issue.status}</Badge>
-                </TableCell>
-                <TableCell>
-                  {issue.jiraKey && jiraBaseUrl ? (
-                    <a
-                      href={`${jiraBaseUrl.replace(/\/$/, "")}/browse/${issue.jiraKey}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-primary underline-offset-4 hover:underline"
-                    >
-                      {issue.jiraKey}
-                    </a>
-                  ) : (
-                    issue.jiraKey ?? ""
-                  )}
-                </TableCell>
-                <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
-                  {new Date(issue.createdAt).toLocaleDateString()}
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    {issue.status === "DRAFT" && jiraConfigured && (
-                      <Button
-                        size="sm"
-                        disabled={pushingId === issue.id}
-                        onClick={() => void handlePushToJira(issue.id)}
-                      >
-                        {pushingId === issue.id ? "Pushing..." : "Push to Jira"}
-                      </Button>
-                    )}
-                    <Button variant="outline" size="sm" onClick={() => openEditDialog(issue)}>
-                      Edit
-                    </Button>
-                    <Button variant="destructive" size="sm" onClick={() => setDeleteTarget(issue)}>
-                      Delete
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border text-left">
+                <th className="py-2 pr-4 font-medium text-muted-foreground">Title</th>
+                <th className="py-2 pr-4 font-medium text-muted-foreground">Reporter</th>
+                <th className="py-2 pr-4 font-medium text-muted-foreground">Priority</th>
+                <th className="py-2 pr-4 font-medium text-muted-foreground">Complexity</th>
+                <th className="py-2 pr-4 font-medium text-muted-foreground">Status</th>
+                <th className="py-2 pr-4 font-medium text-muted-foreground">Jira</th>
+                <th className="py-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {issues.map((issue) => (
+                <tr key={issue.id} className="border-b border-border">
+                  <td className="py-2 pr-4 max-w-xs truncate">{issue.title}</td>
+                  <td className="py-2 pr-4 text-muted-foreground">{issue.reporter ?? ""}</td>
+                  <td className="py-2 pr-4">{issue.priority && <span className="text-xs px-2 py-0.5 rounded-full border border-border">{issue.priority}</span>}</td>
+                  <td className="py-2 pr-4">{issue.complexity && <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{issue.complexity}</span>}</td>
+                  <td className="py-2 pr-4">
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${issue.status === "PUSHED" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                      {issue.status}
+                    </span>
+                  </td>
+                  <td className="py-2 pr-4">
+                    {issue.jiraKey && jiraBaseUrl
+                      ? <a href={`${jiraBaseUrl.replace(/\/$/, "")}/browse/${issue.jiraKey}`} target="_blank" rel="noreferrer" className="text-primary hover:underline">{issue.jiraKey}</a>
+                      : issue.jiraKey ?? ""}
+                  </td>
+                  <td className="py-2">
+                    <div className="flex gap-1.5">
+                      {issue.status === "DRAFT" && jiraConfigured && (
+                        <button type="button" disabled={pushingId === issue.id} onClick={() => void handlePushToJira(issue.id)} className="px-2 py-1 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50">
+                          {pushingId === issue.id ? "Pushing..." : "Push to Jira"}
+                        </button>
+                      )}
+                      <button type="button" onClick={() => openEditDialog(issue)} className="px-2 py-1 text-sm rounded-md border border-input hover:bg-muted">Edit</button>
+                      <button type="button" onClick={() => setDeleteTarget(issue)} className="px-2 py-1 text-sm font-medium rounded-md bg-destructive text-white hover:opacity-90">Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
-      <Dialog open={editingIssue !== null} onOpenChange={(open) => !open && setEditingIssue(null)}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Edit issue</DialogTitle>
-          </DialogHeader>
-          {editingIssue && (
-            <form onSubmit={handleEditSubmit} className="flex max-h-[75vh] flex-col gap-4">
-              <div className="flex flex-col gap-4 overflow-y-auto pr-1">
-                <div className="flex flex-col gap-1">
-                  <h3 className="text-sm font-semibold">Issue details</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Created {new Date(editingIssue.createdAt).toLocaleString()} · Updated{" "}
-                    {new Date(editingIssue.updatedAt).toLocaleString()}
-                  </p>
-                </div>
-
+      {createOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/50" onClick={() => setCreateOpen(false)} />
+          <div className="relative bg-card rounded-lg shadow-lg w-full max-w-md p-6">
+            <h2 className="text-lg font-semibold mb-1">New issue</h2>
+            <p className="text-sm text-muted-foreground mb-4">Describe the work. You can refine details after creating it.</p>
+            <form onSubmit={handleCreate} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="issue-title" className="text-sm font-medium">Title</label>
+                <input id="issue-title" required value={title} onChange={(e) => setTitle(e.target.value)} className="w-full px-3 py-1.5 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="issue-description" className="text-sm font-medium">Description</label>
+                <textarea id="issue-description" required rows={3} value={description} onChange={(e) => setDescription(e.target.value)} className="w-full px-3 py-1.5 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring resize-y" />
+              </div>
+              {approvedTriageItems.length > 0 && (
                 <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="edit-title">Title</Label>
-                  <Input
-                    id="edit-title"
-                    required
-                    value={editTitle}
-                    onChange={(event) => setEditTitle(event.target.value)}
-                  />
+                  <label className="text-sm font-medium">Linked inbox item (optional)</label>
+                  <select value={triageItemId} onChange={(e) => setTriageItemId(e.target.value)} className="w-full px-3 py-1.5 text-sm border border-input rounded-md bg-background focus:outline-none">
+                    <option value={NONE}>None</option>
+                    {approvedTriageItems.map((item) => (
+                      <option key={item.id} value={item.id}>{item.title ?? item.id}</option>
+                    ))}
+                  </select>
                 </div>
+              )}
+              {createError && <p className="text-sm text-destructive">{createError}</p>}
+              <div className="flex justify-end gap-2">
+                <button type="button" onClick={() => setCreateOpen(false)} className="px-3 py-1.5 text-sm font-medium rounded-md border border-input hover:bg-muted">Cancel</button>
+                <button type="submit" disabled={creating} className="px-3 py-1.5 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50">
+                  {creating ? "Creating..." : "Create"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
+      {editingIssue && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/50" onClick={() => setEditingIssue(null)} />
+          <div className="relative bg-card rounded-lg shadow-lg w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
+            <h2 className="text-lg font-semibold mb-1">Edit issue</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Created {new Date(editingIssue.createdAt).toLocaleString()}
+            </p>
+            <form onSubmit={handleEditSubmit} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="edit-title" className="text-sm font-medium">Title</label>
+                <input id="edit-title" required value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="w-full px-3 py-1.5 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="edit-reporter" className="text-sm font-medium">Reporter</label>
+                <input id="edit-reporter" value={editReporter} onChange={(e) => setEditReporter(e.target.value)} className="w-full px-3 py-1.5 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="edit-description" className="text-sm font-medium">Description</label>
+                <textarea id="edit-description" required rows={3} value={editDescription} onChange={(e) => setEditDescription(e.target.value)} className="w-full px-3 py-1.5 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring resize-y" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="edit-affected-files" className="text-sm font-medium">Affected files (one per line)</label>
+                <textarea id="edit-affected-files" rows={3} value={editAffectedFiles} onChange={(e) => setEditAffectedFiles(e.target.value)} className="w-full px-3 py-1.5 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring resize-y font-mono" />
+              </div>
+              <hr className="border-border" />
+              <p className="text-sm font-semibold">AI suggestions</p>
+              <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="edit-reporter">Reporter</Label>
-                  <Input
-                    id="edit-reporter"
-                    value={editReporter}
-                    onChange={(event) => setEditReporter(event.target.value)}
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="edit-description">Description</Label>
-                  <Textarea
-                    id="edit-description"
-                    required
-                    value={editDescription}
-                    onChange={(event) => setEditDescription(event.target.value)}
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="edit-affected-files">Affected files (one per line)</Label>
-                  <Textarea
-                    id="edit-affected-files"
-                    value={editAffectedFiles}
-                    onChange={(event) => setEditAffectedFiles(event.target.value)}
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="flex flex-col gap-1">
-                  <h3 className="text-sm font-semibold">AI suggestions</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Suggested by the enrichment model. Adjust if needed before pushing to Jira.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <Label>Priority</Label>
-                    {jiraPriorities.length > 0 ? (
-                      <Select value={editPriority} onValueChange={(value) => setEditPriority(value ?? NONE)}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={NONE}>None</SelectItem>
-                          {jiraPriorities.map((priority) => (
-                            <SelectItem key={priority.id} value={priority.name}>
-                              {priority.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <Input
-                        value={editPriority === NONE ? "" : editPriority}
-                        onChange={(event) => setEditPriority(event.target.value === "" ? NONE : event.target.value)}
-                        placeholder="e.g. High"
-                      />
-                    )}
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <Label>Complexity</Label>
-                    <Select
-                      value={editComplexity}
-                      onValueChange={(value) => setEditComplexity(value as IssueComplexity | typeof NONE)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={NONE}>None</SelectItem>
-                        {ISSUE_COMPLEXITIES.map((complexity) => (
-                          <SelectItem key={complexity} value={complexity}>
-                            {complexity}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="edit-suggested-assignee">Suggested assignee</Label>
-                  <Input
-                    id="edit-suggested-assignee"
-                    value={editSuggestedAssignee}
-                    onChange={(event) => setEditSuggestedAssignee(event.target.value)}
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="edit-reasoning">Reasoning</Label>
-                  <Textarea
-                    id="edit-reasoning"
-                    value={editReasoning}
-                    onChange={(event) => setEditReasoning(event.target.value)}
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="flex flex-col gap-1">
-                  <h3 className="text-sm font-semibold">Jira sync</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Managed automatically by &quot;Push to Jira&quot; and not editable here.
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Badge variant={STATUS_VARIANTS[editingIssue.status]}>{editingIssue.status}</Badge>
-                  {editingIssue.jiraKey ? (
-                    jiraBaseUrl ? (
-                      <a
-                        href={`${jiraBaseUrl.replace(/\/$/, "")}/browse/${editingIssue.jiraKey}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-sm text-primary underline-offset-4 hover:underline"
-                      >
-                        {editingIssue.jiraKey}
-                      </a>
-                    ) : (
-                      <span className="text-sm text-muted-foreground">{editingIssue.jiraKey}</span>
-                    )
+                  <label className="text-sm font-medium">Priority</label>
+                  {jiraPriorities.length > 0 ? (
+                    <select value={editPriority} onChange={(e) => setEditPriority(e.target.value)} className="w-full px-3 py-1.5 text-sm border border-input rounded-md bg-background focus:outline-none">
+                      <option value={NONE}>None</option>
+                      {jiraPriorities.map((p) => <option key={p.id} value={p.name}>{p.name}</option>)}
+                    </select>
                   ) : (
-                    <span className="text-sm text-muted-foreground">Not pushed yet</span>
+                    <input value={editPriority === NONE ? "" : editPriority} onChange={(e) => setEditPriority(e.target.value === "" ? NONE : e.target.value)} placeholder="e.g. High" className="w-full px-3 py-1.5 text-sm border border-input rounded-md bg-background focus:outline-none" />
                   )}
                 </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium">Complexity</label>
+                  <select value={editComplexity} onChange={(e) => setEditComplexity(e.target.value as IssueComplexity | typeof NONE)} className="w-full px-3 py-1.5 text-sm border border-input rounded-md bg-background focus:outline-none">
+                    <option value={NONE}>None</option>
+                    {ISSUE_COMPLEXITIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
               </div>
-
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="edit-assignee" className="text-sm font-medium">Suggested assignee</label>
+                <input id="edit-assignee" value={editSuggestedAssignee} onChange={(e) => setEditSuggestedAssignee(e.target.value)} className="w-full px-3 py-1.5 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="edit-reasoning" className="text-sm font-medium">Reasoning</label>
+                <textarea id="edit-reasoning" rows={2} value={editReasoning} onChange={(e) => setEditReasoning(e.target.value)} className="w-full px-3 py-1.5 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring resize-y" />
+              </div>
               {editError && <p className="text-sm text-destructive">{editError}</p>}
-              <DialogFooter>
-                <Button type="submit" disabled={saving}>
+              <div className="flex justify-end gap-2">
+                <button type="button" onClick={() => setEditingIssue(null)} className="px-3 py-1.5 text-sm font-medium rounded-md border border-input hover:bg-muted">Cancel</button>
+                <button type="submit" disabled={saving} className="px-3 py-1.5 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50">
                   {saving ? "Saving..." : "Save"}
-                </Button>
-              </DialogFooter>
+                </button>
+              </div>
             </form>
-          )}
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
 
-      <Dialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete issue</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete &quot;{deleteTarget?.title}&quot;? This cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              disabled={deleting}
-              onClick={() => deleteTarget && void handleDelete(deleteTarget.id)}
-            >
-              {deleting ? "Deleting..." : "Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/50" onClick={() => setDeleteTarget(null)} />
+          <div className="relative bg-card rounded-lg shadow-lg w-full max-w-sm p-6">
+            <h2 className="text-lg font-semibold mb-2">Delete issue</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Are you sure you want to delete &quot;{deleteTarget.title}&quot;? This cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button type="button" onClick={() => setDeleteTarget(null)} className="px-3 py-1.5 text-sm font-medium rounded-md border border-input hover:bg-muted">Cancel</button>
+              <button type="button" disabled={deleting} onClick={() => void handleDelete(deleteTarget.id)} className="px-3 py-1.5 text-sm font-medium rounded-md bg-destructive text-white hover:opacity-90 disabled:opacity-50">
+                {deleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

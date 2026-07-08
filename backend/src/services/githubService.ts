@@ -99,56 +99,6 @@ export async function getRecentCommitters(workspace: Workspace, filePaths: strin
   return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([login]) => login);
 }
 
-/** Extracts distinct quoted phrases (likely literal UI text or error messages) from a string. */
-export function extractQuotedPhrases(text: string): string[] {
-  const phrases = new Set<string>();
-
-  for (const match of text.matchAll(/"([^"]{4,80})"/g)) {
-    phrases.add(match[1].trim());
-  }
-  for (const match of text.matchAll(/'([^']{4,80})'/g)) {
-    phrases.add(match[1].trim());
-  }
-
-  return [...phrases].slice(0, 3);
-}
-
-/**
- * Searches the workspace's GitHub repo for exact-text matches of the given phrases, returning
- * file paths that contain them. Requires a GitHub token (code search is not available
- * unauthenticated).
- */
-export async function searchRepoForPhrases(workspace: Workspace, phrases: string[]): Promise<string[]> {
-  if (!workspace.githubRepo || !workspace.githubTokenEncrypted || phrases.length === 0) {
-    return [];
-  }
-
-  const headers = buildGithubHeaders(workspace);
-  const paths = new Set<string>();
-
-  for (const phrase of phrases) {
-    try {
-      const query = encodeURIComponent(`"${phrase}" repo:${workspace.githubRepo}`);
-      const response = await fetch(`https://api.github.com/search/code?q=${query}`, {
-        headers,
-        signal: AbortSignal.timeout(5000),
-      });
-
-      if (!response.ok) {
-        continue;
-      }
-
-      const body = (await response.json()) as { items: { path: string }[] };
-      for (const item of body.items) {
-        paths.add(item.path);
-      }
-    } catch {
-      continue;
-    }
-  }
-
-  return [...paths].slice(0, 5);
-}
 
 export interface GithubStatus {
   configured: boolean;

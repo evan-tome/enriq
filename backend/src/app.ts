@@ -1,6 +1,5 @@
 import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
-import rateLimit from "@fastify/rate-limit";
 import Fastify, {
   type FastifyBaseLogger,
   type FastifyInstance,
@@ -45,7 +44,6 @@ export function buildApp(): App {
     methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   });
   app.register(cookie);
-  app.register(rateLimit, { global: false });
 
   app.register(healthRoutes);
   app.register(authRoutes, { prefix: "/auth" });

@@ -28,31 +28,23 @@ function toIssueDto(issue: Issue): IssueDto {
 }
 
 export async function createIssue(workspaceId: string, data: CreateIssueBody): Promise<IssueDto> {
-  const triageItemId = data.triageItemId ?? null;
-  let reporter: string | null = null;
-
-  if (triageItemId) {
-    const triageItem = await prisma.triageItem.findFirst({ where: { id: triageItemId, workspaceId } });
-
-    if (!triageItem) {
-      throw new NotFoundError("Triage item not found");
-    }
-
-    reporter = triageItem.reporter;
+  let triageItem = null;
+  if (data.triageItemId) {
+    triageItem = await prisma.triageItem.findFirst({ where: { id: data.triageItemId, workspaceId } });
+    if (!triageItem) throw new NotFoundError("Triage item not found");
   }
 
   const issue = await prisma.issue.create({
     data: {
       workspaceId,
-      triageItemId,
+      triageItemId: triageItem?.id ?? null,
       source: "WEBHOOK",
       title: data.title,
       description: data.description,
-      reporter,
+      reporter: triageItem?.reporter ?? null,
       affectedFiles: [] as Prisma.InputJsonValue,
     },
   });
-
   return toIssueDto(issue);
 }
 
@@ -61,70 +53,33 @@ export async function listIssues(workspaceId: string, status?: IssueStatus): Pro
     where: { workspaceId, ...(status ? { status } : {}) },
     orderBy: { createdAt: "desc" },
   });
-
   return issues.map(toIssueDto);
 }
 
 export async function getIssue(workspaceId: string, id: string): Promise<IssueDto> {
   const issue = await prisma.issue.findFirst({ where: { id, workspaceId } });
-
-  if (!issue) {
-    throw new NotFoundError("Issue not found");
-  }
-
+  if (!issue) throw new NotFoundError("Issue not found");
   return toIssueDto(issue);
 }
 
-export async function updateIssue(
-  workspaceId: string,
-  id: string,
-  data: UpdateIssueBody,
-): Promise<IssueDto> {
+export async function updateIssue(workspaceId: string, id: string, data: UpdateIssueBody): Promise<IssueDto> {
   const existing = await prisma.issue.findFirst({ where: { id, workspaceId } });
-
-  if (!existing) {
-    throw new NotFoundError("Issue not found");
-  }
-
-  const issue = await prisma.issue.update({
+  if (!existing) throw new NotFoundError("Issue not found");
+  return toIssueDto(await prisma.issue.update({
     where: { id },
-    data: {
-      ...data,
-      affectedFiles: data.affectedFiles !== undefined ? (data.affectedFiles as Prisma.InputJsonValue) : undefined,
-    },
-  });
-
-  return toIssueDto(issue);
+    data: { ...data, affectedFiles: data.affectedFiles as Prisma.InputJsonValue },
+  }));
 }
 
 export async function deleteIssue(workspaceId: string, id: string): Promise<void> {
-  const existing = await prisma.issue.findFirst({ where: { id, workspaceId } });
-
-  if (!existing) {
-    throw new NotFoundError("Issue not found");
-  }
-
-  await prisma.issue.delete({ where: { id } });
+  await prisma.issue.deleteMany({ where: { id, workspaceId } });
 }
 
-/** Creates the issue in Jira and marks it as pushed. */
 export async function pushIssueToJira(workspaceId: string, id: string): Promise<IssueDto> {
-  const existing = await prisma.issue.findFirst({ where: { id, workspaceId }, include: { workspace: true } });
+  const issue = await prisma.issue.findFirst({ where: { id, workspaceId }, include: { workspace: true } });
+  if (!issue) throw new NotFoundError("Issue not found");
+  if (issue.status === "PUSHED") throw new BadRequestError("Issue has already been pushed to Jira");
 
-  if (!existing) {
-    throw new NotFoundError("Issue not found");
-  }
-
-  if (existing.status === "PUSHED") {
-    throw new BadRequestError("Issue has already been pushed to Jira");
-  }
-
-  const { key } = await createJiraIssue(existing.workspace, existing);
-
-  const issue = await prisma.issue.update({
-    where: { id },
-    data: { jiraKey: key, status: "PUSHED" },
-  });
-
-  return toIssueDto(issue);
+  const { key } = await createJiraIssue(issue.workspace, issue);
+  return toIssueDto(await prisma.issue.update({ where: { id }, data: { jiraKey: key, status: "PUSHED" } }));
 }

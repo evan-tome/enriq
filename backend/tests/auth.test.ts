@@ -119,14 +119,4 @@ describe("auth flow", () => {
     expect(refresh.statusCode).toBe(401);
   });
 
-  it("rate limits repeated login attempts", async () => {
-    await register(app);
-
-    const attempts = Array.from({ length: env.RATE_LIMIT_LOGIN_MAX + 1 }, () =>
-      login(app, { email: credentials.email, password: "wrong-password" }),
-    );
-    const responses = await Promise.all(attempts);
-
-    expect(responses.some((response) => response.statusCode === 429)).toBe(true);
-  });
 });
