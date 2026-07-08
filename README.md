@@ -3,11 +3,7 @@
 **Enriq turns messy bug reports into clean, AI-enriched Jira tickets, without sending your
 codebase to a third-party LLM.**
 
-Teams pipe in raw bug reports from any tool that can fire a webhook (support inbox, error
-tracker, feedback form, etc.). Each report lands in a triage inbox where a human approves or
-rejects it. Approved reports are then enriched by a local AI model that reads the project's
-codebase to suggest a title, description, priority, complexity, affected files, and assignee,
-and the cleaned-up ticket can be pushed straight to Jira with one click.
+Collects bug reports from multiple sources through webhooks, lets developers review and approve issues, then uses a local AI model to improve ticket details, and pushes finalized tickets to Jira
 
 ## How it works
 
