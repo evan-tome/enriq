@@ -1,7 +1,6 @@
 # Enriq
 
-**Enriq turns messy bug reports into clean, AI-enriched Jira tickets, without sending your
-codebase to a third-party LLM.**
+**Enriq turns messy bug reports into clean, AI-enriched Jira tickets.**
 
 Collects bug reports from multiple sources through webhooks, lets developers review and approve issues, then uses a local AI model to improve ticket details, and pushes finalized tickets to Jira
 
